@@ -1,0 +1,2 @@
+- op welk uur valt de hoogste / laagste koers het vaakst?
+- maken quotes checker, zijn er missende dagen?
