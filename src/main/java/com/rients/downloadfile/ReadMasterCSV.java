@@ -1,13 +1,14 @@
 package com.rients.downloadfile;
 
 import com.rients.downloadfile.model.Coin;
+import com.rients.downloadfile.model.Transaction;
 import com.rients.downloadfile.model.Tupel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,24 +23,34 @@ import static com.rients.downloadfile.StaticData.SEP;
 import static com.rients.downloadfile.StaticData.TRANSACTIONSPATH;
 
 public class ReadMasterCSV {
+
 	public static void main(String[] args) throws IOException {
 		List<Coin> coins = Arrays.asList(
-				new Coin(1, "Bitcoin", "BTC", 1),
-				new Coin(2, "Ethereum", "ETH", 1027),
-				new Coin(3, "Tether", "USDT", 825));
-
+				new Coin(1, 1, "Bitcoin", "BTC", 1),
+				new Coin(2, 2, "Ethereum", "ETH", 1027),
+				new Coin(3, 3, "Tether", "USDT", 825),
+				new Coin(4, 5, "XRP", "XRP", 52));
 		new ReadMasterCSV().readMasterCSV(coins);
+	}
+
+	public String format(Double d) {
+		DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
+		String firstNumberAsString = decimalFormat.format(d);
+		return firstNumberAsString;
 	}
 
 	private void readMasterCSV(List<Coin> coins) {
 
-		Map<String, Integer> coinIndex = new TreeMap<>();
-		coins.forEach((coin) -> coinIndex.put(coin.getCoinSymbol(), coin.getId() - 1));
+		int daysBack = 17;
 
-		Map<String, List<Double>> masterCSV1 = TradingFileUtils.readMasterCSV();
+//		Map<String, Integer> coinIndex = new TreeMap<>();
+//		coins.forEach((coin) -> coinIndex.put(coin.getCoinSymbol(), coin.getId() - 1));
+
+		Map<String, List<Double>> masterCSV = TradingFileUtils.readMasterCSV();
 		List<Tupel> tupels = TradingUtils.generateTupes(coins);
+
 		Map<String, List<List<Double>>> merged = new TreeMap<>();
-		masterCSV1.forEach((date, rates) -> {
+		masterCSV.forEach((date, rates) -> {
 			List<List<Double>> totalList = new ArrayList<>();
 			List<Double> requestedQuotes = IntStream
 					.range(0, rates.size())
@@ -52,12 +63,13 @@ public class ReadMasterCSV {
 			totalList.add(calculatedResults);
 			merged.put(date, totalList);
 		});
+
 		String header = calculateHeader(coins, tupels);
 		List<String> lines = generateOutputLines(merged);
 		lines.set(0, header);
 		TradingFileUtils.writeToFile(RESULTPATH, lines);
 
-		Intermediate intermediate = new Intermediate(coins.size());
+		Intermediate intermediate = new Intermediate(tupels.size());
 		merged.forEach((date, values) ->
 		{
 			List<Double> calculatedValues = values.get(1);
@@ -67,7 +79,7 @@ public class ReadMasterCSV {
 			});
 		});
 		intermediate.getData().forEach(column -> {
-			SMA sma = new SMA(20);
+			SMA sma = new SMA(daysBack);
 			column.forEach(cell -> {
 				Double oldValue = sma.currentAverage();
 				Double value = sma.compute(cell.getData());
@@ -107,51 +119,53 @@ public class ReadMasterCSV {
 		boolean firstTransaction = true;
 		Transaction transaction = null;
 		Double portfolioAmount = 1000d;
-		Double profitPercentage = 0d;
-		Double totalAmount = 1000d;
 		Map<String, Double> totalAmountList = new TreeMap<>();
 
 		int index = 0;
 		for (Map.Entry<String, String> entry : coinsInStock.entrySet()) {
-			if (index >= 10) {
+			if (index >= daysBack) {
 				String currentDate = entry.getKey();
 				String currentCoinSymbol = entry.getValue();
 
 				if (!coinInStock.equals(currentCoinSymbol)) {
 					if (!firstTransaction) {
 						// close
-						transaction.setSellRate(masterCSV1.get(currentDate).get(coinIndex.get(coinInStock)));
+						transaction.setSellRate(masterCSV.get(currentDate).get(getCoinIndexInMaster(coinInStock, coins) -1));
 						transaction.setSellDate(currentDate);
-						transaction.setProfit(((transaction.getSellRate() - transaction.getBuyRate()) / transaction.getBuyRate()) * 100);
 						transactions.add(transaction);
-						portfolioAmount = portfolioAmount + (transaction.getPieces() * transaction.getSellRate()) - (transaction.getPieces() * transaction.getBuyRate());
-						System.out.println(portfolioAmount);
-						//profitPercentage = (profitPercentage == 0d) ? transaction.getProfit() : profitPercentage * transaction.getProfit();
+						portfolioAmount = transaction.getPieces() * transaction.getSellRate();
 					}
 					transaction = new Transaction();
 					transaction.setBuyDate(currentDate);
 					transaction.setCoinSymbol(currentCoinSymbol);
-					Double rate = masterCSV1.get(currentDate).get(coinIndex.get(currentCoinSymbol));
+					Double rate = masterCSV.get(currentDate).get(getCoinIndexInMaster(currentCoinSymbol, coins) - 1);
 					transaction.setBuyRate(rate);
 					transaction.setPieces(portfolioAmount / rate);
 					coinInStock = currentCoinSymbol;
 					firstTransaction = false;
-//				} else {
-//					totalAmount = totalAmount +
 				}
-//				totalAmountList.put(currentDate,totalAmount);
+				if (index == coinsInStock.size() - 1) {
+					transaction.setSellRate(masterCSV.get(currentDate).get(getCoinIndexInMaster(coinInStock, coins) - 1));
+					transaction.setSellDate(currentDate);
+					transactions.add(transaction);
+					portfolioAmount = transaction.getPieces() * transaction.getSellRate();
+					System.out.println(transaction);
+
+				}
 			}
 			index++;
 		}
 
-		List<String> tranactionLines = transactions.stream().map(Transaction::toString).collect(Collectors.toList());
-		TradingFileUtils.writeToFile(TRANSACTIONSPATH, tranactionLines);
-		System.out.println("portfolioAmount: " + portfolioAmount);
-		System.out.println("profitPercentage" + profitPercentage);
+		List<String> transactionLines = transactions.stream().map(Transaction::toString).collect(Collectors.toList());
+		transactionLines.add(0, Transaction.getHeader());
+		TradingFileUtils.writeToFile(TRANSACTIONSPATH, transactionLines);
+		System.out.println("portfolioAmount: " + format(portfolioAmount));
 		System.out.println("number of tranactions: " + transactions.size());
 
+	}
 
-		System.out.println(intermediate);
+	private int getCoinIndexInMaster(String coinSymbol, List<Coin> coins) {
+		return coins.stream().filter(coin -> coin.getCoinSymbol().equals(coinSymbol)).findFirst().get().getLocationInMaster();
 
 	}
 
@@ -193,6 +207,7 @@ public class ReadMasterCSV {
 			});
 			lines.add(lineAsString.toString());
 		});
+
 		return lines;
 	}
 
@@ -216,27 +231,6 @@ public class ReadMasterCSV {
 		private Double data;
 		private Double sma;
 		private Integer score;
-	}
-
-	@Data
-	@AllArgsConstructor
-	@NoArgsConstructor
-	public class Transaction {
-		private String buyDate;
-		private String sellDate;
-		private Double buyRate;
-		private Double sellRate;
-		private Double pieces;
-		private Double profit;
-		private String coinSymbol;
-
-		private Double getProfitPerc() {
-			return ((sellRate - buyRate) / buyRate) * 100;
-		}
-
-		public String toString() {
-			return buyDate + SEP + coinSymbol + SEP + pieces + SEP + buyRate + SEP + sellDate + SEP + sellRate + SEP + getProfitPerc();
-		}
 	}
 
 }

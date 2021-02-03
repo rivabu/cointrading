@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Coin {
 	private int id;
+	private int locationInMaster;
 	private String coinName;
 	private String coinSymbol;
 	private int coinId;

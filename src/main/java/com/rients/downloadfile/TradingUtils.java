@@ -11,9 +11,9 @@ public class TradingUtils {
 
 	public static void main(String[] args) {
 		List<Coin> coins = Arrays.asList(
-				new Coin(1, "Bitcoin", "BTC", 1),
-				new Coin(2, "Ethereum", "ETH", 1027),
-				new Coin(3, "Tether", "USDT", 825));
+				new Coin(1, 1, "Bitcoin", "BTC", 1),
+				new Coin(2, 2, "Ethereum", "ETH", 1027),
+				new Coin(3, 3, "Tether", "USDT", 825));
 		System.out.println(generateTupes(coins));
 	}
 
