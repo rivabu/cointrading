@@ -10,6 +10,7 @@ public class StaticData {
 	public static String RESULTPATH = "//Users//rivabu//aaa//other-java-projects//trading//src//main//resources//koersen//RESULT.csv";
 	public static String DOWNLOAD_URL = "https://web-api.coinmarketcap.com/v1/cryptocurrency/ohlcv/historical?id=%s&convert=USD&time_start=%s&time_end=%s";
 	public static String TRANSACTIONSPATH = "//Users//rivabu//aaa//other-java-projects//trading//src//main//resources//koersen//TRANSACTIONS.csv";
+	public static String DAYCHARTPATH = "//Users//rivabu//aaa//other-java-projects//trading//src//main//resources//koersen//DAYCHART-MODEL.csv";
 	public static long startDate = 1451603309; //01-01-2016
 	public static long endDate = 2612305093l; //Saturday 12 October 2052 00:18:13
 	public static String SEP = ",";

@@ -41,4 +41,11 @@ public class Transaction {
 
 		return buyDate + SEP + sellDate + SEP + coinSymbol + SEP + Precision.round(pieces, 2) + SEP + getDays() + SEP + Precision.round(buyRate, 2) + SEP + Precision.round(sellRate, 2) + SEP + Precision.round(getProfitPerc(), 2) + SEP + Precision.round(getProfitAmount(), 2) + SEP + Precision.round(getTotalValue(),  2);
 	}
+
+	public boolean hasDate(String date) {
+		int dateInt = Integer.parseInt(date.replaceAll("-", ""));
+		int startDate = Integer.parseInt(this.buyDate.replaceAll("-", ""));
+		int endDate = Integer.parseInt(this.sellDate.replaceAll("-", ""));
+		return dateInt > startDate && dateInt <= endDate;
+	}
 }

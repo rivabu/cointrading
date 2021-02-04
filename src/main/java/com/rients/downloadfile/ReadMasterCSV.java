@@ -28,29 +28,23 @@ public class ReadMasterCSV {
 		List<Coin> coins = Arrays.asList(
 				new Coin(1, 1, "Bitcoin", "BTC", 1),
 				new Coin(2, 2, "Ethereum", "ETH", 1027),
-				new Coin(3, 3, "Tether", "USDT", 825),
-				new Coin(4, 5, "XRP", "XRP", 52));
+				new Coin(3, 3, "Tether", "USDT", 825));
+				//new Coin(4, 5, "XRP", "XRP", 52));
 		new ReadMasterCSV().readMasterCSV(coins);
 	}
 
-	public String format(Double d) {
-		DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
-		String firstNumberAsString = decimalFormat.format(d);
-		return firstNumberAsString;
-	}
+
 
 	private void readMasterCSV(List<Coin> coins) {
 
 		int daysBack = 17;
+		AllCoinPrices.load();
+		TransactionService transactionService = new TransactionService(1000d);
 
-//		Map<String, Integer> coinIndex = new TreeMap<>();
-//		coins.forEach((coin) -> coinIndex.put(coin.getCoinSymbol(), coin.getId() - 1));
-
-		Map<String, List<Double>> masterCSV = TradingFileUtils.readMasterCSV();
 		List<Tupel> tupels = TradingUtils.generateTupes(coins);
 
 		Map<String, List<List<Double>>> merged = new TreeMap<>();
-		masterCSV.forEach((date, rates) -> {
+		AllCoinPrices.getAllCoinPrices().forEach((date, rates) -> {
 			List<List<Double>> totalList = new ArrayList<>();
 			List<Double> requestedQuotes = IntStream
 					.range(0, rates.size())
@@ -110,16 +104,14 @@ public class ReadMasterCSV {
 		});
 		Map<String, String> coinsInStock = new TreeMap<>();
 		pointsList.forEach((date, score) -> {
-			Integer maxVal = Collections.max(score); // should return 7
+			Integer maxVal = Collections.max(score);
 			Integer maxIdx = score.indexOf(maxVal);
 			coinsInStock.put(date, coins.get(maxIdx).getCoinSymbol());
 		});
-		List<Transaction> transactions = new ArrayList<>();
+
 		String coinInStock = "";
 		boolean firstTransaction = true;
 		Transaction transaction = null;
-		Double portfolioAmount = 1000d;
-		Map<String, Double> totalAmountList = new TreeMap<>();
 
 		int index = 0;
 		for (Map.Entry<String, String> entry : coinsInStock.entrySet()) {
@@ -128,45 +120,32 @@ public class ReadMasterCSV {
 				String currentCoinSymbol = entry.getValue();
 
 				if (!coinInStock.equals(currentCoinSymbol)) {
+					Double newRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(currentCoinSymbol, coins));
 					if (!firstTransaction) {
-						// close
-						transaction.setSellRate(masterCSV.get(currentDate).get(getCoinIndexInMaster(coinInStock, coins) -1));
-						transaction.setSellDate(currentDate);
-						transactions.add(transaction);
-						portfolioAmount = transaction.getPieces() * transaction.getSellRate();
+						Double currentRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(coinInStock, coins));
+						transactionService.closeTransaction(currentRate, transaction, currentDate);
 					}
-					transaction = new Transaction();
-					transaction.setBuyDate(currentDate);
-					transaction.setCoinSymbol(currentCoinSymbol);
-					Double rate = masterCSV.get(currentDate).get(getCoinIndexInMaster(currentCoinSymbol, coins) - 1);
-					transaction.setBuyRate(rate);
-					transaction.setPieces(portfolioAmount / rate);
+					transaction = transactionService.openTransaction(newRate, currentDate, currentCoinSymbol);
 					coinInStock = currentCoinSymbol;
 					firstTransaction = false;
 				}
 				if (index == coinsInStock.size() - 1) {
-					transaction.setSellRate(masterCSV.get(currentDate).get(getCoinIndexInMaster(coinInStock, coins) - 1));
-					transaction.setSellDate(currentDate);
-					transactions.add(transaction);
-					portfolioAmount = transaction.getPieces() * transaction.getSellRate();
-					System.out.println(transaction);
-
+					Double currentRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(coinInStock, coins));
+					transactionService.closeTransaction(currentRate, transaction, currentDate);
+					Double newRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(currentCoinSymbol, coins));
+					transaction = transactionService.openTransaction(newRate, currentDate, currentCoinSymbol);
+					transactionService.closeTransaction(newRate, transaction, currentDate);
 				}
 			}
 			index++;
 		}
-
-		List<String> transactionLines = transactions.stream().map(Transaction::toString).collect(Collectors.toList());
-		transactionLines.add(0, Transaction.getHeader());
-		TradingFileUtils.writeToFile(TRANSACTIONSPATH, transactionLines);
-		System.out.println("portfolioAmount: " + format(portfolioAmount));
-		System.out.println("number of tranactions: " + transactions.size());
-
+		transactionService.writeTransactionsToFile();
+		transactionService.printSummary();
+		transactionService.writeProgressPerDateToFile(coins);
 	}
 
 	private int getCoinIndexInMaster(String coinSymbol, List<Coin> coins) {
 		return coins.stream().filter(coin -> coin.getCoinSymbol().equals(coinSymbol)).findFirst().get().getLocationInMaster();
-
 	}
 
 	public List<Double> calculateRelativeStrongValues(List<Double> input, List<Tupel> tupels) {
