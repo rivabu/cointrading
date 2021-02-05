@@ -12,11 +12,12 @@ public class MoneyMakerSelectedPeriod {
 	public static void main(String[] args) throws IOException {
 		List<Coin> coins = Arrays.asList(
 				new Coin(1, 1, "Bitcoin", "BTC", 1),
-				new Coin(2, 4, "Dot", "DOT", 1027),
-				new Coin(3, 3, "Tether", "USDT", 825));
-				//new Coin(4, 5, "XRP", "XRP", 52));
+				new Coin(2, 2, "Ethereum", "ETH", 1027),
+				new Coin(3, 4, "Dot", "DOT", 1027),
+				new Coin(4, 3, "Tether", "USDT", 825),
+				new Coin(5, 5, "XRP", "XRP", 52));
 		String startDate = "2015-01-01";
-		String endDate = "2015-12-31";
+		String endDate = "2021-12-31";
 
 		new ModelExecuterService().readMasterCSV(coins, startDate, endDate);
 	}

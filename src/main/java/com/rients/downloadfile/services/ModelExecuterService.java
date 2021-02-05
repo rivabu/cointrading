@@ -40,10 +40,9 @@ public class ModelExecuterService {
 		Map<String, List<List<Double>>> merged = new TreeMap<>();
 		AllCoinPrices.getAllCoinPrices().forEach((date, rates) -> {
 			List<List<Double>> totalList = new ArrayList<>();
-			List<Double> requestedQuotes = IntStream
-					.range(0, rates.size())
-					.filter(i -> StaticData.contains(coins, i))
-					.mapToDouble(i -> rates.get(i - 1))
+			List<Double> requestedQuotes = coins
+					.stream()
+					.mapToDouble(coint -> rates.get(coint.getLocationInMaster() - 1))
 					.boxed()
 					.collect(Collectors.toList());
 			List<Double> calculatedResults = calculateRelativeStrongValues(requestedQuotes, tupels);
@@ -73,7 +72,7 @@ public class ModelExecuterService {
 				Double oldValue = sma.currentAverage();
 				Double value = sma.compute(cell.getData());
 				cell.setSma(value);
-				cell.setScore((value <= oldValue || value == 0) ? 0 : 1);
+				cell.setScore((value < oldValue || value == 0) ? 0 : 1);
 			});
 		});
 		// calculate points
@@ -110,7 +109,7 @@ public class ModelExecuterService {
 
 		int index = 0;
 		for (Map.Entry<String, String> entry : coinsInStock.entrySet()) {
-			if (index >= daysBack) {
+			if (index >= (daysBack - 1)) {
 				String currentDate = entry.getKey();
 				String currentCoinSymbol = entry.getValue();
 
@@ -151,7 +150,7 @@ public class ModelExecuterService {
 			double relativeValue = 0d;
 			if (first > 0 && second > 0) {
 				relativeValue = input.get(tupel.getFirstCoin().getId() - 1) / input.get(tupel.getSecondCoin().getId() - 1);
-			} else if (second > 0) {
+			} else if (first > 0) {
 				relativeValue = 1;
 			}
 			result.add(relativeValue);

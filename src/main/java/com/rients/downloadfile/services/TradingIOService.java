@@ -93,8 +93,8 @@ public class TradingIOService {
 		return lines;
 	}
 
-	public static void downloadCoin(Coin data) throws IOException {
-		String url = String.format(StaticData.DOWNLOAD_URL, data.getCoinId(), startDate, endDate);
+	public static void downloadCoin(Coin coin) throws IOException {
+		String url = String.format(StaticData.DOWNLOAD_URL, coin.getCoinId(), startDate, endDate);
 		String content = IOUtils.toString(new URL(url));
 		List<DayQuote> quotes = new ArrayList<>();
 		JSONArray arr = new JSONObject(content)
@@ -102,6 +102,7 @@ public class TradingIOService {
 				.getJSONArray("quotes");
 		arr.forEach(j -> quotes
 				.add(new DayQuote((JSONObject) j)));
-		saveQuote(data, quotes);
+		System.out.println(coin.getCoinName() + SEP + quotes.get(quotes.size() - 1).getDate() + SEP + quotes.get(quotes.size() - 1).getClose());
+		saveQuote(coin, quotes);
 	}
 }
