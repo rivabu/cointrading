@@ -1,4 +1,4 @@
-package com.rients.downloadfile;
+package com.rients.downloadfile.model;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;

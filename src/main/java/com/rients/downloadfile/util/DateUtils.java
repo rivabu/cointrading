@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 public class DateUtils {
 	final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -24,5 +25,16 @@ public class DateUtils {
 		final LocalDate secondDate = LocalDate.parse(secondInput, formatter);
 		final long days = ChronoUnit.DAYS.between(firstDate, secondDate);
 		return days;
+	}
+
+	public static boolean isDateIn(String startDate, String endDate, String sourceDate) {
+		if (Objects.nonNull(startDate) && Objects.nonNull(endDate)) {
+			int sourceDateInt = Integer.parseInt(sourceDate.replaceAll("-", ""));
+			int startDateInt = Integer.parseInt(startDate.replaceAll("-", ""));
+			int endDateInt = Integer.parseInt(endDate.replaceAll("-", ""));
+			return sourceDateInt >= startDateInt && sourceDateInt <= endDateInt;
+		} else {
+			return true;
+		}
 	}
 }

@@ -1,5 +1,6 @@
-package com.rients.downloadfile;
+package com.rients.downloadfile.services;
 
+import com.rients.downloadfile.main.StaticData;
 import com.rients.downloadfile.model.Coin;
 import org.apache.commons.io.FileUtils;
 
@@ -11,11 +12,11 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static com.rients.downloadfile.StaticData.SEP;
+import static com.rients.downloadfile.main.StaticData.SEP;
 
-public class CreateMasterCSV {
+public class CreateMasterCSVService {
 	public static void main(String[] args) throws IOException {
-		new CreateMasterCSV().generateMasterCSV();
+		new CreateMasterCSVService().generateMasterCSV();
 	}
 
 	public void generateMasterCSV() throws IOException {
@@ -25,7 +26,7 @@ public class CreateMasterCSV {
 		int[] idx = { 0 };
 		allCoins.forEach(
 				coin -> {
-					TradingFileUtils.getQuotes(coin).forEach((date, quote) -> {
+					TradingIOService.getQuotes(coin).forEach((date, quote) -> {
 						if (allData.containsKey(date)) {
 							allData.get(date).put(coin.getCoinSymbol(), quote.getClose());
 						} else {
@@ -48,7 +49,7 @@ public class CreateMasterCSV {
 			lines.add(line.toString());
 		});
 		String header = "Date" + SEP + allCoins.stream().map(Coin::getCoinSymbol).collect(Collectors.joining(SEP));
-		lines.set(0, header);
+		lines.add(0, header);
 		FileUtils.writeLines(new File(filename), lines);
 
 	}

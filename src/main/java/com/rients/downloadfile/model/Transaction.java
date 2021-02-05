@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.math3.util.Precision;
 
-import static com.rients.downloadfile.StaticData.SEP;
+import static com.rients.downloadfile.main.StaticData.SEP;
 
 @Data
 @AllArgsConstructor

@@ -1,14 +1,17 @@
-package com.rients.downloadfile;
+package com.rients.downloadfile.services;
 
+import com.rients.downloadfile.main.StaticData;
+import com.rients.downloadfile.model.AllCoinPrices;
 import com.rients.downloadfile.model.Coin;
+import com.rients.downloadfile.model.SMA;
 import com.rients.downloadfile.model.Transaction;
 import com.rients.downloadfile.model.Tupel;
+import com.rients.downloadfile.util.TradingUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,27 +21,18 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.rients.downloadfile.StaticData.RESULTPATH;
-import static com.rients.downloadfile.StaticData.SEP;
-import static com.rients.downloadfile.StaticData.TRANSACTIONSPATH;
+import static com.rients.downloadfile.main.StaticData.RESULTPATH;
+import static com.rients.downloadfile.main.StaticData.SEP;
 
-public class ReadMasterCSV {
-
-	public static void main(String[] args) throws IOException {
-		List<Coin> coins = Arrays.asList(
-				new Coin(1, 1, "Bitcoin", "BTC", 1),
-				new Coin(2, 2, "Ethereum", "ETH", 1027),
-				new Coin(3, 3, "Tether", "USDT", 825));
-				//new Coin(4, 5, "XRP", "XRP", 52));
-		new ReadMasterCSV().readMasterCSV(coins);
-	}
+public class ModelExecuterService {
 
 
 
-	private void readMasterCSV(List<Coin> coins) {
+	public void readMasterCSV(List<Coin> coins, String startDate, String endDate) {
 
 		int daysBack = 17;
-		AllCoinPrices.load();
+		AllCoinPrices.load(startDate, endDate);
+
 		TransactionService transactionService = new TransactionService(1000d);
 
 		List<Tupel> tupels = TradingUtils.generateTupes(coins);
@@ -60,9 +54,10 @@ public class ReadMasterCSV {
 
 		String header = calculateHeader(coins, tupels);
 		List<String> lines = generateOutputLines(merged);
-		lines.set(0, header);
-		TradingFileUtils.writeToFile(RESULTPATH, lines);
+		lines.add(0, header);
+		TradingIOService.writeToFile(RESULTPATH, lines);
 
+		// initialze intermediate
 		Intermediate intermediate = new Intermediate(tupels.size());
 		merged.forEach((date, values) ->
 		{
@@ -78,7 +73,7 @@ public class ReadMasterCSV {
 				Double oldValue = sma.currentAverage();
 				Double value = sma.compute(cell.getData());
 				cell.setSma(value);
-				cell.setScore((value < oldValue) ? 0 : 1);
+				cell.setScore((value <= oldValue || value == 0) ? 0 : 1);
 			});
 		});
 		// calculate points
@@ -151,7 +146,14 @@ public class ReadMasterCSV {
 	public List<Double> calculateRelativeStrongValues(List<Double> input, List<Tupel> tupels) {
 		List<Double> result = new ArrayList<>();
 		tupels.forEach(tupel -> {
-			double relativeValue = input.get(tupel.getFirstCoin().getId() - 1) / input.get(tupel.getSecondCoin().getId() - 1);
+			double first = input.get(tupel.getFirstCoin().getId() - 1);
+			double second = input.get(tupel.getSecondCoin().getId() - 1);
+			double relativeValue = 0d;
+			if (first > 0 && second > 0) {
+				relativeValue = input.get(tupel.getFirstCoin().getId() - 1) / input.get(tupel.getSecondCoin().getId() - 1);
+			} else if (second > 0) {
+				relativeValue = 1;
+			}
 			result.add(relativeValue);
 		});
 		return result;

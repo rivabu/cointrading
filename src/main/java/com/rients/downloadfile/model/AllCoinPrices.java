@@ -1,5 +1,6 @@
-package com.rients.downloadfile;
+package com.rients.downloadfile.model;
 
+import com.rients.downloadfile.services.TradingIOService;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -12,7 +13,11 @@ public class AllCoinPrices {
 	private static Map<String, List<Double>> masterCSV;
 
 	public static void load() {
-		masterCSV = TradingFileUtils.readMasterCSV();
+		masterCSV = TradingIOService.readMasterCSV();
+	}
+
+	public static void load(String startDate, String endDate) {
+		masterCSV = TradingIOService.readMasterCSV(startDate, endDate);
 	}
 
 	public static Map<String, List<Double>> getAllCoinPrices() {

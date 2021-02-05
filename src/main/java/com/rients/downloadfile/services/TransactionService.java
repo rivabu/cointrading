@@ -1,5 +1,6 @@
-package com.rients.downloadfile;
+package com.rients.downloadfile.services;
 
+import com.rients.downloadfile.model.AllCoinPrices;
 import com.rients.downloadfile.model.Coin;
 import com.rients.downloadfile.model.Transaction;
 
@@ -10,9 +11,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static com.rients.downloadfile.StaticData.DAYCHARTPATH;
-import static com.rients.downloadfile.StaticData.SEP;
-import static com.rients.downloadfile.StaticData.TRANSACTIONSPATH;
+import static com.rients.downloadfile.main.StaticData.DAYCHARTPATH;
+import static com.rients.downloadfile.main.StaticData.SEP;
+import static com.rients.downloadfile.main.StaticData.TRANSACTIONSPATH;
 
 public class TransactionService {
 
@@ -46,22 +47,22 @@ public class TransactionService {
 	public void writeTransactionsToFile() {
 		List<String> transactionLines = transactions.stream().map(Transaction::toString).collect(Collectors.toList());
 		transactionLines.add(0, Transaction.getHeader());
-		TradingFileUtils.writeToFile(TRANSACTIONSPATH, transactionLines);
+		TradingIOService.writeToFile(TRANSACTIONSPATH, transactionLines);
 	}
 
 	public void writeProgressPerDateToFile(List<Coin> coins) {
 		List<String> dates = AllCoinPrices.getAllDates();
-		Map<String, Double> allPrices = new TreeMap<>();
+		Map<String, String> allPrices = new TreeMap<>();
 		dates.forEach(date -> {
 					transactions.stream().filter(transaction -> transaction.hasDate(date)).findFirst().ifPresentOrElse(transaction ->
 					{
 						if (!date.equals(transaction.getBuyDate())) {
 							Double price = AllCoinPrices.getPrice(date, getCoinIndexInMaster(transaction.getCoinSymbol(), coins));
 							Double value = price * transaction.getPieces();
-							allPrices.put(date, value);
+							allPrices.put(date, transaction.getCoinSymbol() + SEP + price + SEP +value);
 						}
 					}, () -> {
-						allPrices.put(date, startAmount);
+						allPrices.put(date, SEP + SEP + startAmount);
 					});
 				}
 		);
@@ -70,7 +71,7 @@ public class TransactionService {
 				allPrices.forEach((key, value) -> {
 					dayChartLines.add(key + SEP + value);
 		});
-		TradingFileUtils.writeToFile(DAYCHARTPATH, dayChartLines);
+		TradingIOService.writeToFile(DAYCHARTPATH, dayChartLines);
 	}
 
 	private int getCoinIndexInMaster(String coinSymbol, List<Coin> coins) {

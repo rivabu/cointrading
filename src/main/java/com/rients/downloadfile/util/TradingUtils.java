@@ -1,4 +1,4 @@
-package com.rients.downloadfile;
+package com.rients.downloadfile.util;
 
 import com.rients.downloadfile.model.Coin;
 import com.rients.downloadfile.model.Tupel;

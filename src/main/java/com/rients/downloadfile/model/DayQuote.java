@@ -7,7 +7,7 @@ import org.json.JSONObject;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-import static com.rients.downloadfile.StaticData.SEP;
+import static com.rients.downloadfile.main.StaticData.SEP;
 
 @Data
 @ToString
