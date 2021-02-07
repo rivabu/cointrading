@@ -23,7 +23,11 @@ public class MoneyMakerAll {
 				new Coin(10, 10, "Binance Coin", "BNB", 1839));
 //				new Coin(4, 5, "XRP", "XRP", 52));
 
-		new ModelExecuterService().readMasterCSV(coins, null, null);
+		new ModelExecuterService().readMasterCSV(coins, 1, "2017-01-01", "2018-01-01");
 	}
 
 }
+
+//11
+//		number of transactions: 480
+//		portfolioAmount: 5.300.052.929,9054

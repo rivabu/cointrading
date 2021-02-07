@@ -19,7 +19,7 @@ public class MoneyMakerSelectedPeriod {
 		String startDate = "2015-01-01";
 		String endDate = "2021-12-31";
 
-		new ModelExecuterService().readMasterCSV(coins, startDate, endDate);
+		new ModelExecuterService().readMasterCSV(coins, 17, startDate, endDate);
 	}
 
 }

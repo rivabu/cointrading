@@ -28,9 +28,9 @@ public class ModelExecuterService {
 
 
 
-	public void readMasterCSV(List<Coin> coins, String startDate, String endDate) {
+	public void readMasterCSV(List<Coin> coins, int daysBack, String startDate, String endDate) {
 
-		int daysBack = 17;
+
 		AllCoinPrices.load(startDate, endDate);
 
 		TransactionService transactionService = new TransactionService(1000d);
