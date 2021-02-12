@@ -2,6 +2,7 @@ package com.rients.downloadfile.services;
 
 import com.rients.downloadfile.model.AllCoinPrices;
 import com.rients.downloadfile.model.Coin;
+import com.rients.downloadfile.model.Result;
 import com.rients.downloadfile.model.Transaction;
 
 import java.text.DecimalFormat;
@@ -20,6 +21,7 @@ public class TransactionService {
 	List<Transaction> transactions = new ArrayList<>();
 	Double portfolioAmount;
 	Double startAmount;
+	Double costs = .005d;
 
 	public TransactionService(Double portfolioAmount) {
 		this.startAmount = portfolioAmount;
@@ -32,6 +34,7 @@ public class TransactionService {
 		transaction.setBuyDate(currentDate);
 		transaction.setCoinSymbol(currentCoinSymbol);
 		transaction.setBuyRate(rate);
+		portfolioAmount = portfolioAmount * (1 - costs);
 		transaction.setPieces(portfolioAmount / rate);
 		return transaction;
 	}
@@ -40,8 +43,7 @@ public class TransactionService {
 		transaction.setSellRate(rate);
 		transaction.setSellDate(currentDate);
 		this.transactions.add(transaction);
-		portfolioAmount = transaction.getPieces() * rate;
-		System.out.println(transaction);
+		portfolioAmount = transaction.getPieces() * rate * (1 - costs);
 	}
 
 	public void writeTransactionsToFile() {
@@ -59,7 +61,11 @@ public class TransactionService {
 						if (!date.equals(transaction.getBuyDate())) {
 							Double price = AllCoinPrices.getPrice(date, getCoinIndexInMaster(transaction.getCoinSymbol(), coins));
 							Double value = price * transaction.getPieces();
-							allPrices.put(date, transaction.getCoinSymbol() + SEP + price + SEP +value);
+							System.out.println("date: " + date + "coin: " + transaction.getCoinSymbol() + " price: "+ price + " pieces: " + transaction.getPieces() + " value: " + value);
+							if (date.equals("2016-08-21")) {
+								System.out.println("here");
+							}
+							allPrices.put(date, transaction.getCoinSymbol() + SEP + price + SEP + value);
 						}
 					}, () -> {
 						allPrices.put(date, SEP + SEP + startAmount);
@@ -68,8 +74,8 @@ public class TransactionService {
 		);
 		// write to file here
 		List<String> dayChartLines = new ArrayList<>();
-				allPrices.forEach((key, value) -> {
-					dayChartLines.add(key + SEP + value);
+		allPrices.forEach((key, value) -> {
+			dayChartLines.add(key + SEP + value);
 		});
 		TradingIOService.writeToFile(DAYCHARTPATH, dayChartLines);
 	}
@@ -81,14 +87,10 @@ public class TransactionService {
 	public void printSummary() {
 		System.out.println("number of transactions: " + transactions.size());
 		System.out.println("portfolioAmount: " + format(portfolioAmount));
+	}
 
-//		model: 31.335.603.64
-//
-//		BITCOIN: 0.76904496 * 35510 = 27308
-//		ETH: 355,69 * 1515,1937 = 538937
-//		USD: 333,33
-//
-//		566.580,58
+	public Result getResult() {
+		return Result.builder().numberOfTransactions(transactions.size() - 1).score(portfolioAmount).build();
 	}
 
 	public String format(Double d) {

@@ -1,6 +1,7 @@
 package com.rients.downloadfile.main;
 
 import com.rients.downloadfile.model.Coin;
+import com.rients.downloadfile.model.Result;
 import com.rients.downloadfile.services.ModelExecuterService;
 
 import java.io.IOException;
@@ -19,7 +20,9 @@ public class MoneyMakerSelectedPeriod {
 		String startDate = "2015-01-01";
 		String endDate = "2021-12-31";
 
-		new ModelExecuterService().readMasterCSV(coins, 17, startDate, endDate);
+		ModelExecuterService mes = new ModelExecuterService();
+		Result result = mes.readMasterCSV(coins, 9, true, startDate, endDate);
+		result.print();
 	}
 
 }

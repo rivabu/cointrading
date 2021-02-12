@@ -3,6 +3,8 @@ package com.rients.downloadfile.services;
 import com.rients.downloadfile.main.StaticData;
 import com.rients.downloadfile.model.AllCoinPrices;
 import com.rients.downloadfile.model.Coin;
+import com.rients.downloadfile.model.EMA;
+import com.rients.downloadfile.model.Result;
 import com.rients.downloadfile.model.SMA;
 import com.rients.downloadfile.model.Transaction;
 import com.rients.downloadfile.model.Tupel;
@@ -26,10 +28,9 @@ import static com.rients.downloadfile.main.StaticData.SEP;
 
 public class ModelExecuterService {
 
+// alleen coins mee laten doen, die in een stijgende trend zitten
 
-
-	public void readMasterCSV(List<Coin> coins, int daysBack, String startDate, String endDate) {
-
+	public Result readMasterCSV(List<Coin> coins, int daysBack, boolean writeToFile, String startDate, String endDate) {
 
 		AllCoinPrices.load(startDate, endDate);
 
@@ -54,7 +55,9 @@ public class ModelExecuterService {
 		String header = calculateHeader(coins, tupels);
 		List<String> lines = generateOutputLines(merged);
 		lines.add(0, header);
-		TradingIOService.writeToFile(RESULTPATH, lines);
+		if (writeToFile) {
+			TradingIOService.writeToFile(RESULTPATH, lines);
+		}
 
 		// initialze intermediate
 		Intermediate intermediate = new Intermediate(tupels.size());
@@ -67,10 +70,10 @@ public class ModelExecuterService {
 			});
 		});
 		intermediate.getData().forEach(column -> {
-			SMA sma = new SMA(daysBack);
+			EMA function = new EMA(daysBack);
 			column.forEach(cell -> {
-				Double oldValue = sma.currentAverage();
-				Double value = sma.compute(cell.getData());
+				Double oldValue = function.currentAverage();
+				Double value = function.compute(cell.getData());
 				cell.setSma(value);
 				cell.setScore((value < oldValue || value == 0) ? 0 : 1);
 			});
@@ -126,16 +129,15 @@ public class ModelExecuterService {
 				if (index == coinsInStock.size() - 1) {
 					Double currentRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(coinInStock, coins));
 					transactionService.closeTransaction(currentRate, transaction, currentDate);
-					Double newRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(currentCoinSymbol, coins));
-					transaction = transactionService.openTransaction(newRate, currentDate, currentCoinSymbol);
-					transactionService.closeTransaction(newRate, transaction, currentDate);
 				}
 			}
 			index++;
 		}
-		transactionService.writeTransactionsToFile();
-		transactionService.printSummary();
-		transactionService.writeProgressPerDateToFile(coins);
+		if (writeToFile) {
+			transactionService.writeTransactionsToFile();
+			transactionService.writeProgressPerDateToFile(coins);
+		}
+		return transactionService.getResult();
 	}
 
 	private int getCoinIndexInMaster(String coinSymbol, List<Coin> coins) {
