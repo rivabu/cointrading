@@ -30,10 +30,22 @@ public class DateUtils {
 	public static boolean isDateIn(String startDate, String endDate, String sourceDate) {
 		if (Objects.nonNull(startDate) && Objects.nonNull(endDate)) {
 			int sourceDateInt = Integer.parseInt(sourceDate.replaceAll("-", ""));
+
 			int startDateInt = Integer.parseInt(startDate.replaceAll("-", ""));
 			int endDateInt = Integer.parseInt(endDate.replaceAll("-", ""));
 			return sourceDateInt >= startDateInt && sourceDateInt <= endDateInt;
 		} else {
+			return true;
+		}
+	}
+
+	public static boolean firstDateEqualsOrAfterSecondDate(String firstDate, String secondDate) {
+		if (Objects.nonNull(firstDate) && Objects.nonNull(secondDate)) {
+			int firstDateInt = Integer.parseInt(firstDate.replaceAll("-", ""));
+			int secondDateInt = Integer.parseInt(secondDate.replaceAll("-", ""));
+			return firstDateInt >= secondDateInt;
+		} else {
+			System.out.println("wrong date: " + firstDate + " or " + secondDate) ;
 			return true;
 		}
 	}

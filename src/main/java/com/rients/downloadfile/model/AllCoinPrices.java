@@ -10,14 +10,24 @@ import java.util.Map;
 @NoArgsConstructor
 public class AllCoinPrices {
 
+	private static String startDate;
+
+	private static String endDate;
+
 	private static Map<String, List<Double>> masterCSV;
 
 	public static void load() {
 		masterCSV = TradingIOService.readMasterCSV();
 	}
 
-	public static void load(String startDate, String endDate) {
-		masterCSV = TradingIOService.readMasterCSV(startDate, endDate);
+	public static void load(String myStartDate, String myEndDate) {
+		masterCSV = TradingIOService.readMasterCSV(myStartDate, myEndDate);
+		startDate = myStartDate;
+		endDate = myEndDate;
+	}
+
+	public static String getStartDate() {
+		return startDate;
 	}
 
 	public static Map<String, List<Double>> getAllCoinPrices() {

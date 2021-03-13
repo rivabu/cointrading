@@ -14,14 +14,14 @@ public class MoneyMakerSelectedPeriod {
 		List<Coin> coins = Arrays.asList(
 				new Coin(1, 1, "Bitcoin", "BTC", 1),
 				new Coin(2, 2, "Ethereum", "ETH", 1027),
-				new Coin(3, 4, "Dot", "DOT", 1027),
-				new Coin(4, 3, "Tether", "USDT", 825),
-				new Coin(5, 5, "XRP", "XRP", 52));
+			//	new Coin(3, 4, "Dot", "DOT", 1027),
+				new Coin(3, 3, "Tether", "USDT", 825),
+				new Coin(4, 5, "XRP", "XRP", 52));
 		String startDate = "2015-01-01";
 		String endDate = "2021-12-31";
 
 		ModelExecuterService mes = new ModelExecuterService();
-		Result result = mes.readMasterCSV(coins, 9, true, startDate, endDate);
+		Result result = mes.readMasterCSV(coins, 6, true, startDate, endDate);
 		result.print();
 	}
 

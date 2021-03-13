@@ -21,7 +21,7 @@ public class TransactionService {
 	List<Transaction> transactions = new ArrayList<>();
 	Double portfolioAmount;
 	Double startAmount;
-	Double costs = .005d;
+	Double costs = .003d;
 
 	public TransactionService(Double portfolioAmount) {
 		this.startAmount = portfolioAmount;
@@ -52,7 +52,7 @@ public class TransactionService {
 		TradingIOService.writeToFile(TRANSACTIONSPATH, transactionLines);
 	}
 
-	public void writeProgressPerDateToFile(List<Coin> coins) {
+	public void writeProgressPerDateToFile(List<Coin> coins, Map<String, Double> cryptoIndex) {
 		List<String> dates = AllCoinPrices.getAllDates();
 		Map<String, String> allPrices = new TreeMap<>();
 		dates.forEach(date -> {
@@ -61,10 +61,7 @@ public class TransactionService {
 						if (!date.equals(transaction.getBuyDate())) {
 							Double price = AllCoinPrices.getPrice(date, getCoinIndexInMaster(transaction.getCoinSymbol(), coins));
 							Double value = price * transaction.getPieces();
-							System.out.println("date: " + date + "coin: " + transaction.getCoinSymbol() + " price: "+ price + " pieces: " + transaction.getPieces() + " value: " + value);
-							if (date.equals("2016-08-21")) {
-								System.out.println("here");
-							}
+//							System.out.println("date: " + date + "coin: " + transaction.getCoinSymbol() + " price: "+ price + " pieces: " + transaction.getPieces() + " value: " + value);
 							allPrices.put(date, transaction.getCoinSymbol() + SEP + price + SEP + value);
 						}
 					}, () -> {
@@ -74,8 +71,9 @@ public class TransactionService {
 		);
 		// write to file here
 		List<String> dayChartLines = new ArrayList<>();
-		allPrices.forEach((key, value) -> {
-			dayChartLines.add(key + SEP + value);
+		allPrices.forEach((date, value) -> {
+			Double index = cryptoIndex.get(date);
+			dayChartLines.add(date + SEP + value + SEP + index);
 		});
 		TradingIOService.writeToFile(DAYCHARTPATH, dayChartLines);
 	}

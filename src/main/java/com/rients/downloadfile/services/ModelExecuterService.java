@@ -1,21 +1,19 @@
 package com.rients.downloadfile.services;
 
-import com.rients.downloadfile.main.StaticData;
 import com.rients.downloadfile.model.AllCoinPrices;
 import com.rients.downloadfile.model.Coin;
 import com.rients.downloadfile.model.EMA;
 import com.rients.downloadfile.model.Result;
-import com.rients.downloadfile.model.SMA;
 import com.rients.downloadfile.model.Transaction;
 import com.rients.downloadfile.model.Tupel;
+import com.rients.downloadfile.util.DateUtils;
 import com.rients.downloadfile.util.TradingUtils;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +31,8 @@ public class ModelExecuterService {
 	public Result readMasterCSV(List<Coin> coins, int daysBack, boolean writeToFile, String startDate, String endDate) {
 
 		AllCoinPrices.load(startDate, endDate);
+
+		Map<String, Double> cryptoIndex = generateIndex(coins);
 
 		TransactionService transactionService = new TransactionService(1000d);
 
@@ -117,9 +117,9 @@ public class ModelExecuterService {
 				String currentCoinSymbol = entry.getValue();
 
 				if (!coinInStock.equals(currentCoinSymbol)) {
-					Double newRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(currentCoinSymbol, coins));
+					Double newRate = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(currentCoinSymbol, coins));
 					if (!firstTransaction) {
-						Double currentRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(coinInStock, coins));
+						Double currentRate = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(coinInStock, coins));
 						transactionService.closeTransaction(currentRate, transaction, currentDate);
 					}
 					transaction = transactionService.openTransaction(newRate, currentDate, currentCoinSymbol);
@@ -127,7 +127,7 @@ public class ModelExecuterService {
 					firstTransaction = false;
 				}
 				if (index == coinsInStock.size() - 1) {
-					Double currentRate  = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(coinInStock, coins));
+					Double currentRate = AllCoinPrices.getPrice(currentDate, getCoinIndexInMaster(coinInStock, coins));
 					transactionService.closeTransaction(currentRate, transaction, currentDate);
 				}
 			}
@@ -135,9 +135,37 @@ public class ModelExecuterService {
 		}
 		if (writeToFile) {
 			transactionService.writeTransactionsToFile();
-			transactionService.writeProgressPerDateToFile(coins);
+			transactionService.writeProgressPerDateToFile(coins, cryptoIndex);
 		}
 		return transactionService.getResult();
+	}
+
+	private Map<String, Double> generateIndex(List<Coin> coins) {
+		Map<String, Double> index = new TreeMap<>();
+		Map<String, FirstIndexData> firstOccurrence = new TreeMap<>();
+		coins.forEach(coin -> {
+			AllCoinPrices.getAllCoinPrices().forEach((date, rates) -> {
+				Double value = rates.get(coin.getLocationInMaster() - 1);
+				if (value > 0 && !firstOccurrence.containsKey(coin.getCoinSymbol())) {
+					firstOccurrence.put(coin.getCoinSymbol(), new FirstIndexData(date, value));
+
+				}
+			});
+		});
+		AllCoinPrices.getAllCoinPrices().forEach((date, rates) -> {
+			IndexLine indexLine = new IndexLine(0, 0d);
+			coins.forEach(myCoin -> {
+				boolean includeMe = DateUtils.firstDateEqualsOrAfterSecondDate(date, firstOccurrence.get(myCoin.getCoinSymbol()).firstDate);
+				if (includeMe) {
+					Double startValue = firstOccurrence.get(myCoin.getCoinSymbol()).firstValue;
+					Double currentValue = rates.get(myCoin.getLocationInMaster() - 1);
+					Double profit = (((currentValue - startValue) / startValue) * 100);
+					indexLine.addScore(profit);
+				}
+			});
+			index.put(date, indexLine.getIndex());
+		});
+		return index;
 	}
 
 	private int getCoinIndexInMaster(String coinSymbol, List<Coin> coins) {
@@ -191,6 +219,30 @@ public class ModelExecuterService {
 		});
 
 		return lines;
+	}
+
+	@AllArgsConstructor
+	@Data
+	private class IndexLine {
+		private int number;
+		private Double sum;
+
+		public void addScore(Double profit) {
+			this.number++;
+			this.sum = this.sum +  profit;
+		}
+		public Double getIndex() {
+			if (number > 0) {
+				return 1000 + (sum / number);
+			} else
+				return 1000d;
+		}
+	}
+
+	@AllArgsConstructor
+	public class FirstIndexData {
+		public String firstDate;
+		public Double firstValue;
 	}
 
 	@Data
